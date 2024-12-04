@@ -1,0 +1,100 @@
+FROM ubuntu:noble as builder
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && \
+    apt-get -y full-upgrade && \
+    apt-get install -y --no-install-recommends ffmpeg && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update && \
+    apt-get -y full-upgrade && \
+    apt-get install -y --no-install-recommends \
+        libflatbuffers-dev \
+        libavcodec-dev \
+        libavfilter-dev \
+        libavformat-dev \
+        libavutil-dev \
+        libswscale-dev \
+        libswresample-dev \
+        libpostproc-dev \
+        libdisplay-info-dev && \
+    apt-get install -y --no-install-recommends git g++ \
+        debhelper autoconf automake autopoint gettext autotools-dev cmake curl default-jre doxygen gawk gcc gdc gperf libasound2-dev libass-dev libavahi-client-dev libavahi-common-dev libbluetooth-dev libbluray-dev libbz2-dev libcdio-dev libp8-platform-dev libcrossguid-dev libcurl4-openssl-dev libcwiid-dev libdbus-1-dev libdrm-dev libegl1-mesa-dev libenca-dev libflac-dev libfmt-dev libfontconfig-dev libfreetype-dev libfribidi-dev libfstrcmp-dev libgcrypt20-dev libgif-dev libgles2-mesa-dev libgl1-mesa-dev libglu1-mesa-dev libgnutls28-dev libgpg-error-dev libgtest-dev libiso9660-dev libjpeg-dev liblcms2-dev libltdl-dev liblzo2-dev libmicrohttpd-dev libmysqlclient-dev libnfs-dev libogg-dev libpcre3-dev libplist-dev libpng-dev libpulse-dev libshairplay-dev libsmbclient-dev libspdlog-dev libsqlite3-dev libssl-dev libtag1-dev libtiff5-dev libtinyxml-dev libtinyxml2-dev libtool libudev-dev libunistring-dev libva-dev libvdpau-dev libvorbis-dev libxmu-dev libxrandr-dev libxslt1-dev libxt-dev lsb-release meson nasm ninja-build python3-dev python3-pil python3-pip rapidjson-dev swig unzip uuid-dev zip zlib1g-dev \
+        libgbm-dev libinput-dev libxkbcommon-dev && \
+    apt-get autoremove -y && \
+    apt-get clean
+
+ARG KODI_VERSION
+WORKDIR /workdir
+RUN git clone --branch ${KODI_VERSION} --depth 1 https://github.com/xbmc/xbmc.git kodi
+
+# Build Kodi
+RUN mkdir -p kodi-build && cd kodi-build &&  \
+    cmake ../kodi -DCMAKE_INSTALL_PREFIX=/usr/local \
+             -DCORE_PLATFORM_NAME=gbm \
+             -DAPP_RENDER_SYSTEM=gles \
+             -DWITH_FFMPEG=ON \
+             -DENABLE_INTERNAL_FFMPEG=OFF \
+             -DENABLE_INTERNAL_FLATBUFFERS=OFF \
+             -DCMAKE_BUILD_TYPE=Release && \
+    cmake --build . -- VERBOSE=1 -j$(getconf _NPROCESSORS_ONLN) && \
+    make install DESTDIR=/workdir/kodi-install
+
+FROM ubuntu:noble
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && \
+    apt-get -y full-upgrade && \
+    apt-get install -y --no-install-recommends ffmpeg && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        libmicrohttpd12t64 \
+        libpython3.12t64 \
+        libsmbclient0 \
+        libcurl4t64 \
+        liblzo2-2 \
+        libtinyxml2.6.2v5 \
+        libinput10 \
+        libdisplay-info1 \
+        libmysqlclient21 \
+        libbluetooth3 \
+        libnfs14 \
+        libplist-2.0-4 \
+        libxslt1.1 \
+        libfmt9 \
+        libfstrcmp0 \
+        libpcre3 \
+        libspdlog1.12 \
+        libtag1v5 \
+        libtinyxml2-10 \
+        libgles2 \
+        libegl1 \
+        libshairplay0 && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+LABEL maintainer="Christopher L.D. SHEN <shenleidi@gmail.com>"
+
+# Copy compiled Kodi from the builder stage
+COPY --from=builder /workdir/kodi-install/usr/local /usr/local
+
+VOLUME ["/usr/local/share/kodi/portable_data"]
+
+# web interface
+EXPOSE 8080
+# json-rpc
+EXPOSE 9090
+# EventServer
+EXPOSE 9777/udp
+
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
+
+CMD ["--logging=console", "--portable"]
