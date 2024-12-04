@@ -1,8 +1,8 @@
-# Kodi Docker
+# Kodi Docker RK35XX
 
 This project provides a Docker container for running Kodi (GBM mode) on headless RK35XX devices with full **hardware transcoding** enabled.
 
-Successfully tested hardware decoding and playback of H.264 and H.265 HDR10 videos on Rock 5B and Rock 5C. Need more tests information from other devices.
+Successfully tested hardware decoding and playback of H.264 1080p and H.265 4K HDR10 videos on Rock 5B and Rock 5C. Need more tests information from other devices.
 
 - Source code: https://github.com/yrzr/gitlab-ce-arm64v8-docker
 
