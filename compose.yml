@@ -20,13 +20,7 @@ services:
       - WEBSERVER_AUTHENTICATION=true
       - WEBSERVER_USERNAME=kodi
       - WEBSERVER_PASSWORD=kodi
-    ports:
-      # web interface
-      - 8080:8080
-      # json-rpc
-      - 9090:9090
-      # EventServer
-      - 9777:9777/udp
+    network_mode: "host"
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /media:/media:ro
