@@ -1,4 +1,4 @@
-FROM ubuntu:noble as builder
+FROM ubuntu:noble AS builder
 
 ENV DEBIAN_FRONTEND=noninteractive
 

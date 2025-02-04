@@ -4,13 +4,13 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        KODI_VERSION: 21.1-Omega
+        KODI_VERSION: 21.2-Omega
     image: yrzr/kodi-gbm:rk35xx
     container_name: kodi-gbm
     deploy:
       resources:
         limits:
-          cpus: '4.0'
+          cpus: '2.0'
           memory: 2G
     privileged: true
     restart: unless-stopped
