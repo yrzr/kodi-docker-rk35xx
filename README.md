@@ -23,15 +23,13 @@ Successfully tested hardware decoding and playback of H.264 1080p and H.265 4K H
 docker run -d \
   --name kodi-gbm \
   --privileged \
+  --network host \
   --restart unless-stopped \
   -e WEBSERVER_ENABLED=true \
   -e WEBSERVER_PORT=8080 \
   -e WEBSERVER_AUTHENTICATION=true \
   -e WEBSERVER_USERNAME=kodi \
   -e WEBSERVER_PASSWORD=kodi \
-  -p 8080:8080 \
-  -p 9090:9090 \
-  -p 9777:9777/udp \
   -v /etc/localtime:/etc/localtime:ro \
   -v /media:/media:ro \
   -v /path/to/kodi/data:/usr/local/share/kodi/portable_data \
@@ -96,6 +94,58 @@ The username of the webserver access authentication
 - WEBSERVER_PASSWORD
 
 The password of the webserver access authentication
+
+## Known issue
+
+### Unable to see the OSD while playing a movie
+
+See the issue [here](https://github.com/Joshua-Riek/ubuntu-rockchip/issues/89) and dirty fix [here](https://forum.armbian.com/topic/25957-guide-kodi-on-orange-pi-5-with-gpu-hardware-acceleration-and-hdmi-audio/page/6/#comment-172924)
+
+You can also do the fix manually with the following steps.
+
+
+- install `device-tree-compiler`
+
+```bash
+apt-get update
+apt-get install device-tree-compiler 
+```
+
+- find the dtb file of your machine
+
+It usually located at `/boot/dtbs/{your kernel version}/rockchip/rk3588{s}-{your machine model}.dtb`, for example it is `/boot/dtbs/6.1.75-vendor-rk35xx/rockchip/rk3588s-rock-5c.dtb` for my Rock 5C. Then backup the original dtb file.
+
+```bash
+cd /boot/dtbs/6.1.75-vendor-rk35xx/rockchip/
+cp -v rk3588s-rock-5c.dtb rk3588s-rock-5c.dtb.bak
+```
+
+- extract dtc source file from dtb file
+
+```bash
+dtc -I dtb -O dts -o rk3588s-rock-5c.dtc rk3588s-rock-5c.dtb
+```
+
+- edit your dtc file and comment out `plane-mask` and `primary-plane`
+
+```txt
+...
+    // rockchip,plane-mask = <0x05>;
+    // rockchip,primary-plane = <0x02>;
+...
+```
+
+- compile dts source file to dtb file
+
+```bash
+dtc -I dts -O dtb -o rk3588s-rock-5c.dtb rk3588s-rock-5c.dts
+```
+
+- reboot the system
+
+```bash
+reboot
+```
 
 ## Contributing
 
