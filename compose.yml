@@ -15,6 +15,7 @@ services:
     privileged: true
     restart: unless-stopped
     environment:
+      - TZ=Asia/Hong_Kong
       - WEBSERVER_ENABLED=true
       - WEBSERVER_PORT=8080
       - WEBSERVER_AUTHENTICATION=true
@@ -22,8 +23,6 @@ services:
       - WEBSERVER_PASSWORD=kodi
     network_mode: "host"
     volumes:
-      - /etc/localtime:/etc/localtime:ro
+      - ./data:/usr/share/kodi/portable_data
       - /media:/media:ro
-      - ./data:/usr/local/share/kodi/portable_data
-    # entrypoint: /usr/local/bin/kodi-standalone
     # command: --logging=console --portable --debug

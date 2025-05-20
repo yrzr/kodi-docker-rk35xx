@@ -32,7 +32,7 @@ RUN git clone --branch ${KODI_VERSION} --depth 1 https://github.com/xbmc/xbmc.gi
 
 # Build Kodi
 RUN mkdir -p kodi-build && cd kodi-build &&  \
-    cmake ../kodi -DCMAKE_INSTALL_PREFIX=/usr/local \
+    cmake ../kodi -DCMAKE_INSTALL_PREFIX=/usr \
              -DCORE_PLATFORM_NAME=gbm \
              -DAPP_RENDER_SYSTEM=gles \
              -DWITH_FFMPEG=ON \
@@ -82,9 +82,9 @@ RUN apt-get update && \
 LABEL maintainer="Christopher L.D. SHEN <shenleidi@gmail.com>"
 
 # Copy compiled Kodi from the builder stage
-COPY --from=builder /workdir/kodi-install/usr/local /usr/local
+COPY --from=builder /workdir/kodi-install/usr /usr
 
-VOLUME ["/usr/local/share/kodi/portable_data"]
+VOLUME ["/usr/share/kodi/portable_data"]
 
 # web interface
 EXPOSE 8080

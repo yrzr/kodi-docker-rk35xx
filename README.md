@@ -4,7 +4,7 @@ This project provides a Docker container for running Kodi (GBM mode) on headless
 
 Successfully tested hardware decoding and playback of H.264 1080p and H.265 4K HDR10 videos on Rock 5B and Rock 5C. Need more tests information from other devices.
 
-- Source code: https://github.com/yrzr/gitlab-ce-arm64v8-docker
+- Source code: https://github.com/yrzr/kodi-docker-rk35xx
 
 - Docker image: https://hub.docker.com/repository/docker/yrzr/kodi-gbm
 
@@ -12,8 +12,42 @@ Successfully tested hardware decoding and playback of H.264 1080p and H.265 4K H
 
 - RK35XX devices with video output capability;
 - Rockchip BSP/Vendor kernel 5.10 or 6.1 are need for [ffmpeg-rockchip](https://github.com/nyanmisaka/ffmpeg-rockchip);
+- Enable `panthor` driver
 - Docker installed on your system;
 - Docker Compose (optional, for easier management).
+
+The `panthor` driver could be enabled by enabling devicetree `rockchip-rk3588-panthor-gpu.dtbo` through `fdtoverlays` in `extlinux.conf`:
+
+```txt
+menu label ... 
+linux ...
+initrd ...
+fdtdir /boot/dtbs/6.1.99-vendor-rk35xx
+fdtoverlays /boot/dtbs/6.1.99-vendor-rk35xx/rockchip/overlay/rockchip-rk3588-panthor-gpu.dtbo
+append ...
+```
+
+Then, download the [firmware file](`https://github.com/armbian/firmware/blob/master/arm/mali/arch10.8/mali_csffw.bin`) and save it to `/lib/firmware/arm/mali/arch10.8/mali_csffw.bin`
+
+After a successful reboot, you will get the following messages in `dmesg` showing that panthor driver is working now:
+
+```bash
+$ dmesg -t | grep panthor
+panthor fb000000.gpu-panthor: [drm] clock rate = 198000000
+panthor fb000000.gpu-panthor: Looking up mali-supply from device tree
+panthor fb000000.gpu-panthor: Looking up sram-supply from device tree
+panthor fb000000.gpu-panthor: Looking up sram-supply property in node /gpu-panthor@fb000000 failed
+panthor fb000000.gpu-panthor: EM: OPP:400000 is inefficient
+panthor fb000000.gpu-panthor: EM: OPP:300000 is inefficient
+panthor fb000000.gpu-panthor: EM: created perf domain
+panthor fb000000.gpu-panthor: [drm] mali-g610 id 0xa867 major 0x0 minor 0x0 status 0x5
+panthor fb000000.gpu-panthor: [drm] Features: L2:0x7120306 Tiler:0x809 Mem:0x301 MMU:0x2830 AS:0xff
+panthor fb000000.gpu-panthor: [drm] shader_present=0x50005 l2_present=0x1 tiler_present=0x1
+panthor fb000000.gpu-panthor: [drm] Firmware protected mode entry not be supported, ignoring
+panthor fb000000.gpu-panthor: [drm] Firmware git sha: 814b47b551159067b67a37c4e9adda458ad9d852
+panthor fb000000.gpu-panthor: [drm] CSF FW using interface v1.1.0, Features 0x0 Instrumentation features 0x71
+[drm] Initialized panthor 1.3.0 20230801 for fb000000.gpu-panthor on minor 2
+```
 
 ## Getting Started
 
@@ -25,14 +59,14 @@ docker run -d \
   --privileged \
   --network host \
   --restart unless-stopped \
+  -e TZ=Asia/Hong_Kong \
   -e WEBSERVER_ENABLED=true \
   -e WEBSERVER_PORT=8080 \
   -e WEBSERVER_AUTHENTICATION=true \
   -e WEBSERVER_USERNAME=kodi \
   -e WEBSERVER_PASSWORD=kodi \
-  -v /etc/localtime:/etc/localtime:ro \
+  -v /path/to/kodi/data:/usr/share/kodi/portable_data \
   -v /media:/media:ro \
-  -v /path/to/kodi/data:/usr/local/share/kodi/portable_data \
   yrzr/kodi-gbm:rk35xx
 ```
 
@@ -98,6 +132,8 @@ The password of the webserver access authentication
 ## Known issue
 
 ### Unable to see the OSD while playing a movie
+
+Note: This problem no longer exists since kernel version 6.1.99.
 
 See the issue [here](https://github.com/Joshua-Riek/ubuntu-rockchip/issues/89) and dirty fix [here](https://forum.armbian.com/topic/25957-guide-kodi-on-orange-pi-5-with-gpu-hardware-acceleration-and-hdmi-audio/page/6/#comment-172924)
 

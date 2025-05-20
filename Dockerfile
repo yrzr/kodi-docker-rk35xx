@@ -1,102 +1,114 @@
-FROM ubuntu:noble AS builder
+FROM debian:bookworm-backports AS builder
 
 ENV DEBIAN_FRONTEND=noninteractive
 
+# get https://radxa-repo.github.io/rk3588s2-bookworm/
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends fish software-properties-common && \
-    add-apt-repository -y ppa:jjriek/panfork-mesa && \
-    add-apt-repository -y ppa:jjriek/rockchip && \
-    add-apt-repository -y ppa:jjriek/rockchip-multimedia && \
     apt-get -y full-upgrade && \
-    apt-get install -y --no-install-recommends ffmpeg && \
-    apt-get remove -y software-properties-common && \
+    apt-get install -y --no-install-recommends curl ca-certificates && \
+    keyring="$(mktemp)" && \
+    version="$(curl -L https://github.com/radxa-pkg/radxa-archive-keyring/releases/latest/download/VERSION)" && \
+    curl -L --output "$keyring" "https://github.com/radxa-pkg/radxa-archive-keyring/releases/latest/download/radxa-archive-keyring_${version}_all.deb" && \
+    dpkg -i "$keyring" && \
+    rm -f "$keyring" && \
+    echo "deb [signed-by=/usr/share/keyrings/radxa-archive-keyring.gpg] https://radxa-repo.github.io/rk3588s2-bookworm/ rk3588s2-bookworm main" > /etc/apt/sources.list.d/70-radxa.list && \
     apt-get autoremove -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
+WORKDIR /workdir
+
+# build ffmpeg-rockchip
 RUN apt-get update && \
-    apt-get -y full-upgrade && \
-    apt-get install -y --no-install-recommends \
-        libflatbuffers-dev \
-        libavcodec-dev \
-        libavfilter-dev \
-        libavformat-dev \
-        libavutil-dev \
-        libswscale-dev \
-        libswresample-dev \
-        libpostproc-dev \
-        libdisplay-info-dev && \
-    apt-get install -y --no-install-recommends git g++ \
-        debhelper autoconf automake autopoint gettext autotools-dev cmake curl default-jre doxygen gawk gcc gdc gperf libasound2-dev libass-dev libavahi-client-dev libavahi-common-dev libbluetooth-dev libbluray-dev libbz2-dev libcdio-dev libp8-platform-dev libcrossguid-dev libcurl4-openssl-dev libcwiid-dev libdbus-1-dev libdrm-dev libegl1-mesa-dev libenca-dev libflac-dev libfmt-dev libfontconfig-dev libfreetype-dev libfribidi-dev libfstrcmp-dev libgcrypt20-dev libgif-dev libgles2-mesa-dev libgl1-mesa-dev libglu1-mesa-dev libgnutls28-dev libgpg-error-dev libgtest-dev libiso9660-dev libjpeg-dev liblcms2-dev libltdl-dev liblzo2-dev libmicrohttpd-dev libmysqlclient-dev libnfs-dev libogg-dev libpcre3-dev libplist-dev libpng-dev libpulse-dev libshairplay-dev libsmbclient-dev libspdlog-dev libsqlite3-dev libssl-dev libtag1-dev libtiff5-dev libtinyxml-dev libtinyxml2-dev libtool libudev-dev libunistring-dev libva-dev libvdpau-dev libvorbis-dev libxmu-dev libxrandr-dev libxslt1-dev libxt-dev lsb-release meson nasm ninja-build python3-dev python3-pil python3-pip rapidjson-dev swig unzip uuid-dev zip zlib1g-dev \
-        libgbm-dev libinput-dev libxkbcommon-dev && \
-    apt-get autoremove -y && \
-    apt-get clean
+    apt-get install -y --no-install-recommends build-essential cmake git libdrm-dev librga-dev librockchip-mpp-dev libsdl2*-dev libx264-dev libx265-dev pkg-config librga2 && \
+    git clone --depth=1 https://github.com/nyanmisaka/ffmpeg-rockchip && \
+    cd ffmpeg-rockchip/ && \
+    ./configure --prefix=/usr --enable-gpl --enable-version3 --enable-libdrm --enable-rkmpp --enable-rkrga --enable-libx264 --enable-libx265 --enable-ffplay && \
+    make -j$(nproc) && \
+    make install
 
 ARG KODI_VERSION
-WORKDIR /workdir
-RUN git clone --branch ${KODI_VERSION} --depth 1 https://github.com/xbmc/xbmc.git kodi
 
-# Build Kodi
-RUN mkdir -p kodi-build && cd kodi-build &&  \
-    cmake ../kodi -DCMAKE_INSTALL_PREFIX=/usr/local \
+# build kodi
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        autoconf \
+        automake \
+        libtool \
+        clang-format \
+        libgtest-dev \
+        openssl \
+        liblzo2-dev \
+        libgif-dev \
+        python3-dev \
+        libxml2-dev \
+        libass-dev \
+        libcdio-dev \
+        libcdio++-dev \
+        libcurl4-openssl-dev \
+        libflatbuffers-dev \
+        libfmt-dev \
+        libfstrcmp-dev \
+        libpcre3-dev \
+        rapidjson-dev \
+        libssl-dev \
+        libspdlog-dev \
+        libsqlite3-dev \
+        libtag1-dev \
+        libtinyxml-dev \
+        libtinyxml2-dev \
+        libinput-dev \
+        libdisplay-info-dev \
+        libshairplay-dev \
+        libavahi-client-dev \
+        libbluetooth-dev \
+        libbluray-dev \
+        libcap-dev \
+        libcec-dev \
+        libnfs-dev \
+        libsmbclient-dev \
+        libmicrohttpd-dev \
+        libxslt1-dev \
+        libplist-dev \
+        liblirc-dev \
+        liblcms2-dev \
+        default-jre-headless \
+        swig && \
+    git clone --branch ${KODI_VERSION} --depth 1 https://github.com/xbmc/xbmc kodi && \
+    mkdir -p kodi-build && cd kodi-build && \
+    cmake ../kodi -DCMAKE_INSTALL_PREFIX=/usr/ \
              -DCORE_PLATFORM_NAME=gbm \
              -DAPP_RENDER_SYSTEM=gles \
              -DWITH_FFMPEG=ON \
              -DENABLE_INTERNAL_FFMPEG=OFF \
-             -DENABLE_INTERNAL_FLATBUFFERS=OFF \
              -DCMAKE_BUILD_TYPE=Release && \
     cmake --build . -- VERBOSE=1 -j$(getconf _NPROCESSORS_ONLN) && \
-    make install DESTDIR=/workdir/kodi-install
+    make install DESTDIR=/install/kodi
 
-FROM ubuntu:noble
+FROM debian:bookworm-backports
 
 ENV DEBIAN_FRONTEND=noninteractive
 
+# get https://radxa-repo.github.io/rk3588s2-bookworm/
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends fish software-properties-common && \
-    add-apt-repository -y ppa:jjriek/panfork-mesa && \
-    add-apt-repository -y ppa:jjriek/rockchip && \
-    add-apt-repository -y ppa:jjriek/rockchip-multimedia && \
     apt-get -y full-upgrade && \
-    apt-get install -y --no-install-recommends ffmpeg && \
-    apt-get remove -y software-properties-common && \
+    apt-get install -y --no-install-recommends curl ca-certificates && \
+    keyring="$(mktemp)" && \
+    version="$(curl -L https://github.com/radxa-pkg/radxa-archive-keyring/releases/latest/download/VERSION)" && \
+    curl -L --output "$keyring" "https://github.com/radxa-pkg/radxa-archive-keyring/releases/latest/download/radxa-archive-keyring_${version}_all.deb" && \
+    dpkg -i "$keyring" && \
+    rm -f "$keyring" && \
+    echo "deb [signed-by=/usr/share/keyrings/radxa-archive-keyring.gpg] https://radxa-repo.github.io/rk3588s2-bookworm/ rk3588s2-bookworm main" > /etc/apt/sources.list.d/70-radxa.list && \
     apt-get autoremove -y && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        libmicrohttpd12t64 \
-        libpython3.12t64 \
-        libsmbclient0 \
-        libcurl4t64 \
-        liblzo2-2 \
-        libtinyxml2.6.2v5 \
-        libinput10 \
-        libdisplay-info1 \
-        libmysqlclient21 \
-        libbluetooth3 \
-        libnfs14 \
-        libplist-2.0-4 \
-        libxslt1.1 \
-        libfmt9 \
-        libfstrcmp0 \
-        libpcre3 \
-        libspdlog1.12 \
-        libtag1v5 \
-        libtinyxml2-10 \
-        libgles2 \
-        libegl1 \
-        libshairplay0 && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 LABEL maintainer="Christopher L.D. SHEN <shenleidi@gmail.com>"
 
 # Copy compiled Kodi from the builder stage
-COPY --from=builder /workdir/kodi-install/usr/local /usr/local
+COPY --from=builder /install/kodi/usr /usr
 
-VOLUME ["/usr/local/share/kodi/portable_data"]
+VOLUME ["/usr/share/kodi/portable_data"]
 
 # web interface
 EXPOSE 8080
@@ -105,8 +117,57 @@ EXPOSE 9090
 # EventServer
 EXPOSE 9777/udp
 
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        libgl1-mesa-dri \
+        fish \
+        libbluray2 \
+        libmicrohttpd12 \
+        libpython3.11 \
+        libsmbclient \
+        libcdio19 \
+        libcdio++1 \
+        libflatbuffers2 \
+        libfribidi0 \
+        liblzo2-2 \
+        libtinyxml2.6.2v5 \
+        libtinyxml2-9 \
+        libinput10 \
+        libdisplay-info2 \
+        libasound2 \
+        libbluetooth3 \
+        libcec6 \
+        libnfs13 \
+        libpulse0 \
+        libsndio7.0 \
+        libass9 \
+        librga2 \
+        libx264-164 \
+        libx265-199 \
+        libdrm2 \
+        librockchip-mpp1 \
+        libfmt9 \
+        libfstrcmp0 \
+        libpcre3 \
+        libspdlog1.10 \
+        libtag1v5 \
+        libgbm1 \
+        libxkbcommon0 \
+        libgles2 \
+        libegl1 \
+        libshairplay0 \
+        libxslt1.1 \
+        liblircclient0 \
+        libplist3 \
+        liblcms2-2 \
+        avahi-daemon && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
 COPY entrypoint.sh /entrypoint.sh
+
 RUN chmod +x /entrypoint.sh
+
 ENTRYPOINT ["/entrypoint.sh"]
 
 CMD ["--logging=console", "--portable"]

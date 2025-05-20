@@ -1,6 +1,6 @@
 #!/bin/sh
 
-SETTING_FOLDER=/usr/local/share/kodi/portable_data/userdata
+SETTING_FOLDER=/usr/share/kodi/portable_data/userdata
 SETTING_FILE=${SETTING_FOLDER}/guisettings.xml
 
 if [ ! -f ${SETTING_FILE} ]; then
@@ -59,4 +59,20 @@ fi
 
 echo "$XML_CONTENT" >${SETTING_FILE}
 
-exec /usr/local/bin/kodi-standalone "$@"
+if [ -d /run/dbus/ ]; then
+  rm -rf /run/dbus/*
+else 
+  mkdir /run/dbus
+fi
+
+dbus-daemon --system --fork
+
+if [ -d /run/avahi-daemon/ ]; then
+  rm -rf /run/avahi-daemon/*
+else 
+  mkdir /run/avahi-daemon
+fi
+
+avahi-daemon -D
+
+exec /usr/bin/kodi-standalone "$@"
