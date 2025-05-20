@@ -194,3 +194,4 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 ## Acknowledgements
 
 - [ffmpeg-rockchip](https://github.com/nyanmisaka/ffmpeg-rockchip) - FFmpeg with async and zero-copy Rockchip MPP & RGA support.
+- [radxa-repo](https://radxa-repo.github.io/rk3588s2-bookworm/)
