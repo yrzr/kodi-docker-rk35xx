@@ -105,18 +105,6 @@ RUN apt-get update && \
 
 LABEL maintainer="Christopher L.D. SHEN <shenleidi@gmail.com>"
 
-# Copy compiled Kodi from the builder stage
-COPY --from=builder /install/kodi/usr /usr
-
-VOLUME ["/usr/share/kodi/portable_data"]
-
-# web interface
-EXPOSE 8080
-# json-rpc
-EXPOSE 9090
-# EventServer
-EXPOSE 9777/udp
-
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         libgl1-mesa-dri \
@@ -163,6 +151,18 @@ RUN apt-get update && \
         avahi-daemon && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
+
+# Copy compiled Kodi from the builder stage
+COPY --from=builder /install/kodi/usr /usr
+
+VOLUME ["/usr/share/kodi/portable_data"]
+
+# web interface
+EXPOSE 8080
+# json-rpc
+EXPOSE 9090
+# EventServer
+EXPOSE 9777/udp
 
 COPY entrypoint.sh /entrypoint.sh
 
