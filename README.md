@@ -27,7 +27,7 @@ fdtoverlays /boot/dtbs/6.1.99-vendor-rk35xx/rockchip/overlay/rockchip-rk3588-pan
 append ...
 ```
 
-Then, download the [firmware file](`https://github.com/armbian/firmware/blob/master/arm/mali/arch10.8/mali_csffw.bin`) and save it to `/lib/firmware/arm/mali/arch10.8/mali_csffw.bin`
+Then, download the [firmware file](https://github.com/armbian/firmware/blob/master/arm/mali/arch10.8/mali_csffw.bin) and save it to `/lib/firmware/arm/mali/arch10.8/mali_csffw.bin`
 
 After a successful reboot, you will get the following messages in `dmesg` showing that panthor driver is working now:
 
