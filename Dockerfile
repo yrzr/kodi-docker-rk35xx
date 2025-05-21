@@ -29,7 +29,7 @@ RUN apt-get update && \
 
 ARG KODI_VERSION
 
-# build kodi
+# kodi build dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         autoconf \
@@ -73,8 +73,10 @@ RUN apt-get update && \
         liblirc-dev \
         liblcms2-dev \
         default-jre-headless \
-        swig && \
-    git clone --branch ${KODI_VERSION} --depth 1 https://github.com/xbmc/xbmc kodi && \
+        swig
+
+# build kodi
+RUN git clone --branch ${KODI_VERSION} --depth 1 https://github.com/xbmc/xbmc kodi && \
     mkdir -p kodi-build && cd kodi-build && \
     cmake ../kodi -DCMAKE_INSTALL_PREFIX=/usr/ \
              -DCORE_PLATFORM_NAME=gbm \
