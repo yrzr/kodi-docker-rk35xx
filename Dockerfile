@@ -109,7 +109,9 @@ ENV DEBIAN_FRONTEND=noninteractive
 # get https://radxa-repo.github.io/rk3588s2-bookworm/
 RUN apt-get update && \
     apt-get -y full-upgrade && \
-    apt-get install -y --no-install-recommends curl ca-certificates && \
+    apt-get install -y --no-install-recommends \
+        curl \
+        ca-certificates && \
     keyring="$(mktemp)" && \
     version="$(curl -L https://github.com/radxa-pkg/radxa-archive-keyring/releases/latest/download/VERSION)" && \
     curl -L --output "$keyring" "https://github.com/radxa-pkg/radxa-archive-keyring/releases/latest/download/radxa-archive-keyring_${version}_all.deb" && \
