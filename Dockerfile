@@ -42,8 +42,6 @@ RUN git clone --depth=1 https://github.com/nyanmisaka/ffmpeg-rockchip && \
     make -j$(nproc) && \
     make install
 
-ARG KODI_VERSION
-
 # kodi build dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -89,6 +87,8 @@ RUN apt-get update && \
         liblcms2-dev \
         default-jre-headless \
         swig
+
+ARG KODI_VERSION
 
 # build kodi
 RUN git clone --branch ${KODI_VERSION} --depth 1 https://github.com/xbmc/xbmc kodi && \
