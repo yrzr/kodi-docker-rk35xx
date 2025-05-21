@@ -5,7 +5,9 @@ ENV DEBIAN_FRONTEND=noninteractive
 # get https://radxa-repo.github.io/rk3588s2-bookworm/
 RUN apt-get update && \
     apt-get -y full-upgrade && \
-    apt-get install -y --no-install-recommends curl ca-certificates && \
+    apt-get install -y --no-install-recommends \
+        curl \
+        ca-certificates && \
     keyring="$(mktemp)" && \
     version="$(curl -L https://github.com/radxa-pkg/radxa-archive-keyring/releases/latest/download/VERSION)" && \
     curl -L --output "$keyring" "https://github.com/radxa-pkg/radxa-archive-keyring/releases/latest/download/radxa-archive-keyring_${version}_all.deb" && \
@@ -18,10 +20,23 @@ RUN apt-get update && \
 
 WORKDIR /workdir
 
-# build ffmpeg-rockchip
+# ffmpeg-rockchip build dependencies
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends build-essential cmake git libdrm-dev librga-dev librockchip-mpp-dev libsdl2*-dev libx264-dev libx265-dev pkg-config librga2 && \
-    git clone --depth=1 https://github.com/nyanmisaka/ffmpeg-rockchip && \
+    apt-get install -y --no-install-recommends \
+        build-essential \
+        cmake \
+        git \
+        libdrm-dev \
+        librga-dev \
+        librockchip-mpp-dev \
+        libsdl2*-dev \
+        libx264-dev \
+        libx265-dev \
+        pkg-config \
+        librga2
+
+# build ffmpeg
+RUN git clone --depth=1 https://github.com/nyanmisaka/ffmpeg-rockchip && \
     cd ffmpeg-rockchip/ && \
     ./configure --prefix=/usr --enable-gpl --enable-version3 --enable-libdrm --enable-rkmpp --enable-rkrga --enable-libx264 --enable-libx265 --enable-ffplay && \
     make -j$(nproc) && \
